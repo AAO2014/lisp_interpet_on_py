@@ -1,9 +1,13 @@
+import re
+from ptypes import keywords_vk, Symbol, nil, car, cdr, cons, ConsListClass, isnull
+
+
 def prsval(s):
 	if s == 'true':
 		return True
-	elif s == 'false'
+	elif s == 'false':
 		return False
-	elif s in keywords_vk
+	elif s in keywords_vk:
 		return keywords_vk[s]
 	else:
 		try:
@@ -39,7 +43,7 @@ def prs(s):
 	c, z = s[0], s[1:]
 	if c == '(':
 		return prslist(z)
-	elif c == ')'
+	elif c == ')':
 		raise ValueError('extra closed \')\': ' + subs(s))
 	elif c == '\"':
 		try:
@@ -47,15 +51,44 @@ def prs(s):
 			return z[0:a], z[b:]
 		except Exception:
 			raise ValueError('closed \'\"\' is absent: ' + subs(s))
-		elif c == ';':
-			try:
-				a, b = re.search(';', z).span()
-				return prs(z[b:])
-			except Exception:
-				raise ValueError('closed \';\' is absent: ' + subs(s))
-		elif c == '\'':
-			x, ss = prs(z)
-			return cons(SF.QUOTE, cons(x, nil)), ss
-		else:
-			a, b = re.search('\s|\(|\)|\"|;|$', s).span()
-			return prsval(s[0:a]), s[a:]
+	elif c == ';':
+		try:
+			a, b = re.search(';', z).span()
+			return prs(z[b:])
+		except Exception:
+			raise ValueError('closed \';\' is absent: ' + subs(s))
+	elif c == '\'':
+		x, ss = prs(z)
+		return cons(SF.QUOTE, cons(x, nil)), ss
+	else:
+		a, b = re.search('\s|\(|\)|\"|;|$', s).span()
+		return prsval(s[0:a]), s[a:]
+
+
+def parse(s):
+	x, ss = prs(s)
+	if not ss.strip():
+		return x
+	y, zz = prs('(' + ss + ')')
+	if not zz.strip():
+		return cons(x, y)
+	else:
+		raise ValueError('extra symbols: ' + subs(zz))
+
+
+def show(o):
+	if isinstance(o, ConsListClass):
+		r = ''
+		while not isnull(o):
+			r, o = r + ' ' + show(car(o)), cdr(o)
+		return '(' + r.lstrip() + ')'
+	elif o in keywords_vk:
+		return keywords_vk[o]
+	elif isinstance(o, Symbol):
+		return o.value
+	elif isinstance(o, bool):
+		return'true' if o else 'false'
+	elif isinstance(o, str):
+		return '"' + o + '"'
+	else:
+		return str(o)
